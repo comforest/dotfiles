@@ -1,0 +1,26 @@
+#!/usr/bin/env zsh
+
+if [[ -z "$1" ]]; then
+  echo "Usage: gwo <branch>" >&2
+  exit 1
+fi
+
+branch="${1#*/}"
+candidates=(
+  ".claude/worktrees/${branch}"
+  "../.claude/worktrees/${branch}"
+)
+
+for dir in "${candidates[@]}"; do
+  if [[ -d "$dir" ]]; then
+    idea "$dir"
+    exit 0
+  fi
+done
+
+echo "Error: worktree not found for '${branch}'" >&2
+echo "Searched:" >&2
+for dir in "${candidates[@]}"; do
+  echo "  $(realpath --no-symlinks "${dir}" 2>/dev/null || echo "${dir}")" >&2
+done
+exit 1

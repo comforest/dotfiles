@@ -1,0 +1,15 @@
+#compdef gwo
+
+_gwo() {
+  local branches
+  branches=(${(f)"$(git branch --format='%(refname:short)' 2>/dev/null)"})
+
+  if [[ ${#branches} -eq 0 ]]; then
+    _message 'no local branches found'
+    return 0
+  fi
+
+  compadd -a branches
+}
+
+_gwo "$@"
