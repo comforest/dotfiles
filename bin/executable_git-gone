@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Remove local branches whose upstream has been deleted on the remote.
+# If a gone branch is checked out in a worktree, remove that worktree too.
+set -euo pipefail
+
+git fetch --all --prune
+
+mapfile -t gone < <(
+  git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads \
+    | awk '$2 == "[gone]" {print $1}'
+)
+
+if [[ ${#gone[@]} -eq 0 ]]; then
+  echo "No gone branches."
+  exit 0
+fi
+
+for branch in "${gone[@]}"; do
+  worktree=$(
+    git worktree list --porcelain \
+      | awk -v b="refs/heads/$branch" '
+          /^worktree / {w=$2}
+          /^branch / && $2==b {print w; exit}
+        '
+  )
+
+  if [[ -n "$worktree" ]]; then
+    echo "Removing worktree: $worktree"
+    git worktree remove "$worktree" 2>/dev/null \
+      || git worktree remove --force "$worktree"
+  fi
+
+  echo "Deleting branch: $branch"
+  git branch -D "$branch"
+done
